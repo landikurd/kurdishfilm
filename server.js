@@ -40,8 +40,8 @@ console.log('Uploads dir:', UPLOADS_DIR);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_DIR));
+app.use(express.static(path.join(__dirname, 'public')));
 
 function readDevices() {
   try { return JSON.parse(fs.readFileSync(DEVICES_FILE, 'utf-8')); }
@@ -364,11 +364,23 @@ app.get('/api/devices', (req, res) => {
 });
 
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  try {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  } catch (e) {
+    res.status(500).send('Error loading admin page');
+  }
 });
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  try {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } catch (e) {
+    res.status(500).send('Error loading page');
+  }
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', bot: !!bot });
 });
 
 const PORT = process.env.PORT || 3000;
