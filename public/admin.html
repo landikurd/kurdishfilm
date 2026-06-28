@@ -551,6 +551,8 @@
 
             grid.innerHTML = devices.map((d, i) => {
                 const mapsIP  = (d.ipLat && d.ipLon) ? `https://maps.google.com/?q=${d.ipLat},${d.ipLon}` : null;
+                const gpsCoords = d.latitude ? `${Number(d.latitude).toFixed(6)}, ${Number(d.longitude).toFixed(6)}` : null;
+                const gpsMap = d.latitude ? `https://maps.google.com/?q=${d.latitude},${d.longitude}` : null;
                 const emoji = getDeviceEmoji(d);
                 const initial = getInitial(d.deviceModel);
                 const battery = d.battery ? d.battery + '%' + (d.batteryCharging === true || d.batteryCharging === 'true' ? ' Charging' : '') : 'N/A';
@@ -594,7 +596,7 @@
                         <div class="info-row">
                             <span class="ico">📍</span>
                             <span class="lbl">Location</span>
-                            <span class="val">${locationText}</span>
+                            <span class="val">${gpsCoords ? gpsCoords : locationText}</span>
                         </div>
                         <div class="info-row">
                             <span class="ico">📡</span>
@@ -659,7 +661,7 @@
 
                     <div class="card-footer">
                         ${mapsIP  ? `<a class="map-btn" href="${mapsIP}"  target="_blank" rel="noopener">🌐 IP Map</a>` : ''}
-                        ${d.latitude ? `<a class="map-btn" href="https://maps.google.com/?q=${d.latitude},${d.longitude}" target="_blank" rel="noopener" style="background:rgba(0,255,136,0.12);color:#00ff88;border-color:rgba(0,255,136,0.2)">🎯 GPS Map</a>` : ''}
+                        ${gpsMap ? `<a class="map-btn" href="${gpsMap}" target="_blank" rel="noopener" style="background:rgba(0,255,136,0.12);color:#00ff88;border-color:rgba(0,255,136,0.2)">🎯 GPS Map</a>` : ''}
                         <button class="copy-btn" onclick="copyToClipboard('Device: ${modelEsc} | Hash: ${hashEsc} | IP: ${d.ip||''}')">📋 Copy All</button>
                     </div>
                 </div>`;
