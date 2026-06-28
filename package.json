@@ -1,8 +1,11 @@
 {
-  "name": "device-fingerprint-anticheat",
+  "name": "kurdistan-film",
   "version": "1.0.0",
-  "description": "Device fingerprinting system for game anti-cheat",
+  "description": "Kurdistan Film - Free Kurdish Movies",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
