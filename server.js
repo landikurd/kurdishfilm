@@ -10,11 +10,15 @@ const fs = require('fs');
 const app = express();
 const server = http.createServer(app);
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'kurdistan2026';
+
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 let bot = null;
 if (TELEGRAM_TOKEN && TELEGRAM_CHAT_ID) {
@@ -422,6 +426,18 @@ app.get('/api/devices', (req, res) => {
 });
 
 app.get('/admin', (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
+    return res.status(401).send('🔒 Authentication required');
+  }
+  const [scheme, encoded] = auth.split(' ');
+  if (scheme !== 'Basic') return res.status(401).send('Wrong auth scheme');
+  const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+  const [user, pass] = decoded.split(':');
+  if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
+    return res.status(401).send('🔒 Wrong username or password');
+  }
   try {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
   } catch (e) {
