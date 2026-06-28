@@ -370,6 +370,24 @@
             </div>
         </div>
 
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon green">🟢</div>
+                <div class="stat-info">
+                    <div class="value" style="font-size:1.1rem" id="statusText">Online</div>
+                    <div class="label">System Status</div>
+                </div>
+            </div>
+            <div class="stat-card" style="cursor:pointer" onclick="controlSystem('stop')">
+                <div class="stat-icon" style="background:rgba(255,71,87,.12)">⏸</div>
+                <div class="stat-info"><div class="value" style="font-size:1.1rem;color:#ff4757">Pause</div><div class="label">Stop listening</div></div>
+            </div>
+            <div class="stat-card" style="cursor:pointer" onclick="controlSystem('start')">
+                <div class="stat-icon" style="background:rgba(46,204,113,.12)">▶️</div>
+                <div class="stat-info"><div class="value" style="font-size:1.1rem;color:#2ecc71">Resume</div><div class="label">Start listening</div></div>
+            </div>
+        </div>
+
         <!-- Stats -->
         <div class="stats-row">
             <div class="stat-card">
@@ -435,6 +453,33 @@
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+        }
+
+        async function controlSystem(action) {
+            const user = prompt('Username:');
+            if (!user) return;
+            const pass = prompt('Password:');
+            if (!pass) return;
+            const auth = 'Basic ' + btoa(user + ':' + pass);
+            try {
+                const r = await fetch('/admin/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': auth },
+                    body: JSON.stringify({ action })
+                });
+                const d = await r.json();
+                if (d.listeners === false) {
+                    document.getElementById('statusText').textContent = '⏸ Paused';
+                    document.getElementById('statusText').style.color = '#ff4757';
+                    showToast('System Paused - no data received');
+                } else {
+                    document.getElementById('statusText').textContent = '🟢 Online';
+                    document.getElementById('statusText').style.color = '#00ff88';
+                    showToast('System Online - listening');
+                }
+            } catch(e) {
+                showToast('Failed: ' + e.message);
+            }
         }
 
         function getDeviceEmoji(d) {

