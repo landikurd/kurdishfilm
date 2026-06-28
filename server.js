@@ -408,12 +408,13 @@ app.post('/api/photo', upload.single('photo'), (req, res) => {
     const filename = 'photo_' + Date.now() + '.jpg';
     const filePath = savePhotoToDisk(filename, req.file.buffer);
     const ip = getIP(req);
+    const sentHash = req.body.deviceHash || '';
 
     console.log('Photo saved to disk:', filePath, 'Size:', req.file.buffer.length);
 
     const devices = readDevices();
     for (let i = devices.length - 1; i >= 0; i--) {
-      if (!devices[i].photo) {
+      if (!devices[i].photo && (!sentHash || devices[i].deviceHash === sentHash)) {
         devices[i].photo = '/uploads/' + filename;
         fs.writeFileSync(DEVICES_FILE, JSON.stringify(devices, null, 2));
         break;
