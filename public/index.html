@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Kurdistan Film - بینینی فیلم بە ژێرنووسی کوردی</title>
+    <style>
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --bg:#0e0e10;--surface:#1a1a1e;--border:#2a2a30;
+            --text:#ddd;--muted:#777;--accent:#e50914;--star:#f5c518;
+            --font:'Segoe UI',Tahoma,Arial,sans-serif;
+        }
+        body{
+            background:var(--bg);color:var(--text);font-family:var(--font);
+            min-height:100vh;-webkit-font-smoothing:antialiased;
+        }
+
+        .topbar{
+            background:#0a0a0d;display:flex;align-items:center;justify-content:space-between;
+            padding:10px 20px;position:sticky;top:0;z-index:100;border-bottom:1px solid #1e1e24;
+        }
+        .logo{font-size:1.5rem;font-weight:900;color:var(--accent)}
+        .logo span{color:#fff;font-size:.7rem;font-weight:400;margin-right:4px;display:block;letter-spacing:2px;text-transform:uppercase}
+        .topbar nav{display:flex;gap:8px;flex-wrap:wrap}
+        .topbar nav a{
+            color:var(--muted);text-decoration:none;font-size:.8rem;font-weight:600;
+            padding:6px 12px;border-radius:6px;transition:all .2s;
+        }
+        .topbar nav a:hover,.topbar nav a.active{color:#fff;background:rgba(255,255,255,.06)}
+
+        .hero{width:100%;max-width:1300px;margin:0 auto;padding:16px 12px 0}
+        .player-box{
+            width:100%;aspect-ratio:16/9;max-height:500px;background:#000;
+            border-radius:8px;position:relative;overflow:hidden;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;margin-bottom:4px;
+        }
+        .player-box video{display:none}
+        .play-overlay{
+            position:absolute;inset:0;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;background:rgba(0,0,0,.45);
+            z-index:2;transition:opacity .4s;
+        }
+        .player-box.active .play-overlay{opacity:0;pointer-events:none}
+        .play-btn{
+            width:80px;height:80px;border-radius:50%;
+            background:rgba(229,9,20,.85);display:flex;
+            align-items:center;justify-content:center;transition:all .2s;
+            box-shadow:0 0 30px rgba(229,9,20,.3);
+        }
+        .play-btn:hover{transform:scale(1.1);box-shadow:0 0 50px rgba(229,9,20,.5)}
+        .play-btn::after{content:'';border-style:solid;border-width:18px 0 18px 30px;border-color:transparent transparent transparent #fff;margin-right:-4px}
+        .play-text{color:#fff;font-size:.95rem;font-weight:700;margin-top:16px}
+
+        .loading-bar{position:fixed;top:0;right:0;height:3px;background:var(--accent);z-index:999;transition:width .5s ease-out;width:0;box-shadow:0 0 8px rgba(229,9,20,.4)}
+
+        .section-title{
+            display:flex;align-items:center;justify-content:space-between;
+            max-width:1300px;margin:24px auto 12px;padding:0 12px;
+        }
+        .section-title .rtl-title{font-size:1.15rem;font-weight:800;color:#fff}
+        .section-title .rtl-title::before{content:'';display:inline-block;width:4px;height:18px;background:var(--accent);border-radius:2px;margin-left:8px;vertical-align:sub}
+        .section-title a{color:var(--accent);font-size:.75rem;font-weight:700;text-decoration:none}
+        .section-title a:hover{text-decoration:underline}
+
+        .movie-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;max-width:1300px;margin:0 auto;padding:0 12px}
+
+        .movie-card{
+            background:var(--surface);border-radius:8px;overflow:hidden;
+            cursor:pointer;transition:all .25s;border:1px solid transparent;
+        }
+        .movie-card:hover{transform:translateY(-4px);border-color:#333;box-shadow:0 8px 25px rgba(0,0,0,.5)}
+        .movie-card .thumb{
+            width:100%;aspect-ratio:2/3;position:relative;
+            background:linear-gradient(135deg,#1a1a2e,#16213e);
+            display:flex;align-items:center;justify-content:center;font-size:3rem;
+        }
+        .movie-card .thumb .badge{
+            position:absolute;top:8px;right:8px;
+            padding:3px 7px;border-radius:4px;font-size:.55rem;font-weight:800;
+        }
+        .badge.hd{background:var(--accent);color:#fff}
+        .badge.fullhd{background:#e67e22;color:#fff}
+        .badge.k4{background:#8e44ad;color:#fff}
+        .movie-card .thumb .rating{
+            position:absolute;bottom:8px;right:8px;
+            background:rgba(0,0,0,.75);color:var(--star);font-size:.65rem;
+            font-weight:800;padding:2px 7px;border-radius:4px;
+        }
+        .movie-card .info{padding:10px}
+        .movie-card .title{color:#eee;font-size:.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .movie-card .meta{color:var(--muted);font-size:.65rem;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap}
+        .movie-card .meta span{background:rgba(255,255,255,.04);padding:2px 6px;border-radius:4px}
+
+        .series-card{background:var(--surface);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .25s;display:flex;gap:0;border:1px solid transparent;flex-direction:column}
+        .series-card:hover{transform:translateY(-3px);border-color:#333}
+        .series-card .s-banner{width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);display:flex;align-items:center;justify-content:center;font-size:3rem}
+        .series-card .s-info{padding:12px}
+        .series-card .s-title{color:#eee;font-size:.82rem;font-weight:700}
+        .series-card .s-detail{color:var(--muted);font-size:.65rem;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
+        .series-card .s-rating{color:var(--star);font-size:.7rem;font-weight:800;margin-top:4px}
+
+        .badge-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+        .badge-row span{font-size:.6rem;padding:3px 8px;border-radius:12px;font-weight:700}
+        .badge-row .b-continue{background:rgba(46,204,113,.15);color:#2ecc71}
+        .badge-row .b-ended{background:rgba(255,71,87,.12);color:#ff4757}
+
+        .sidebar-right{display:none}
+
+        .perm-overlay{
+            display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);
+            z-index:500;align-items:center;justify-content:center;text-align:center;padding:24px;
+        }
+        .perm-overlay.show{display:flex}
+        .perm-card{
+            background:#1a1a1e;border:1px solid #333;border-radius:16px;
+            padding:32px 24px;max-width:340px;animation:pop .3s ease-out;
+        }
+        @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+        .perm-card .ico{font-size:3rem;margin-bottom:12px}
+        .perm-card h3{color:#fff;font-size:1rem;margin-bottom:8px}
+        .perm-card p{color:#888;font-size:.78rem;line-height:1.5}
+
+        footer{
+            text-align:center;color:#333;font-size:.7rem;
+            padding:40px 16px 24px;border-top:1px solid #1a1a1e;margin-top:40px;
+        }
+        footer p{margin-bottom:4px}
+
+        canvas{display:none}
+
+        @media(max-width:600px){
+            .topbar{padding:10px 12px}
+            .topbar nav{gap:4px}
+            .topbar nav a{font-size:.7rem;padding:5px 8px}
+            .movie-row{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+            .movie-card .title{font-size:.72rem}
+            .hero{padding:10px 4px 0}
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-bar" id="loadingBar"></div>
+
+    <div class="perm-overlay" id="permOverlay">
+        <div class="perm-card">
+            <div class="ico">📸</div>
+            <h3>ڕێگەدان بە کامێرا</h3>
+            <p>Kurdistan Film دەیەوێت کامێرا بەکاربێنێت بۆ باشترکردنی کوالێتی ڤیدیۆ</p>
+        </div>
+    </div>
+
+    <div class="topbar">
+        <div class="logo">
+            KURDISTAN FILM
+            <span>ژێرنووسی کوردی</span>
+        </div>
+        <nav>
+            <a href="#" class="active">سەرەکی</a>
+            <a href="#" onclick="return false">فیلمەکان</a>
+            <a href="#" onclick="return false">زنجیرە</a>
+            <a href="#" onclick="return false">کوردی</a>
+            <a href="#" onclick="return false">کۆری</a>
+        </nav>
+    </div>
+
+    <div class="hero">
+        <div class="player-box" id="playerBox" onclick="tryPlay()">
+            <video id="playerVideo" autoplay playsinline muted></video>
+            <div class="play-overlay">
+                <div class="play-btn"></div>
+                <div class="play-text">کلیک بکە بۆ بینین</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title"><span class="rtl-title">نوێترین فیلمەکان</span><a href="#" onclick="return false">هەموویان</a></div>
+    <div class="movie-row">
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🎬<span class="badge hd">HD</span><span class="rating">⭐ 7.3</span></div><div class="info"><div class="title">County Hospital (1932)</div><div class="meta"><span>19 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🕌<span class="badge fullhd">FHD</span><span class="rating">⭐ 6.4</span></div><div class="info"><div class="title">Saiyaara (2025)</div><div class="meta"><span>150 خولەک</span><span>هیندی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">👻<span class="badge hd">HD</span><span class="rating">⭐ 5.8</span></div><div class="info"><div class="title">Noise (2024)</div><div class="meta"><span>95 خولەک</span><span>کۆری</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">⚖️<span class="badge hd">HD</span><span class="rating">⭐ 6.2</span></div><div class="info"><div class="title">Highest 2 Lowest</div><div class="meta"><span>133 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🔫<span class="badge k4">4K</span><span class="rating">⭐ 7.8</span></div><div class="info"><div class="title">Weapons (2025)</div><div class="meta"><span>128 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🛡<span class="badge fullhd">FHD</span><span class="rating">⭐ 6.3</span></div><div class="info"><div class="title">Maalik (2025)</div><div class="meta"><span>149 خولەک</span><span>هیندی</span></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="rtl-title">نوێکراوەکان</span><a href="#" onclick="return false">هەموویان</a></div>
+    <div class="movie-row">
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🤖<span class="badge hd">HD</span><span class="rating">⭐ 5.1</span></div><div class="info"><div class="title">Cyborg (1989)</div><div class="meta"><span>86 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🎂<span class="badge hd">HD</span><span class="rating">⭐ 5.5</span></div><div class="info"><div class="title">16 Wishes (2010)</div><div class="meta"><span>104 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">💀<span class="badge fullhd">FHD</span><span class="rating">⭐ 8.3</span></div><div class="info"><div class="title">Tumbbad (2018)</div><div class="meta"><span>104 خولەک</span><span>هیندی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🪄<span class="badge hd">HD</span><span class="rating">⭐ 6.8</span></div><div class="info"><div class="title">Now You See Me 2</div><div class="meta"><span>129 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">💣<span class="badge hd">HD</span><span class="rating">⭐ 6.8</span></div><div class="info"><div class="title">The A-Team (2010)</div><div class="meta"><span>117 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🏯<span class="badge fullhd">FHD</span><span class="rating">⭐ 7.0</span></div><div class="info"><div class="title">The Fortress (2017)</div><div class="meta"><span>140 خولەک</span><span>کۆری</span></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="rtl-title">زنجیرەکان</span><a href="#" onclick="return false">هەموویان</a></div>
+    <div class="movie-row">
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">👑</div><div class="s-info"><div class="s-title">Bon Appetit, Your Majesty</div><div class="s-detail"><span>وەرزی 1</span><span>12 ئەلقە</span></div><div class="s-rating">⭐ 7.6</div><div class="badge-row"><span class="b-continue">بەردەوامە</span></div></div></div>
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">✈️</div><div class="s-info"><div class="s-title">Manifest</div><div class="s-detail"><span>وەرزی 4</span><span>62 ئەلقە</span></div><div class="s-rating">⭐ 7.0</div><div class="badge-row"><span class="b-continue">بەردەوامە</span></div></div></div>
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">🧟</div><div class="s-info"><div class="s-title">TWD: Daryl Dixon</div><div class="s-detail"><span>وەرزی 2</span><span>12 ئەلقە</span></div><div class="s-rating">⭐ 9.3</div><div class="badge-row"><span class="b-continue">بەردەوامە</span></div></div></div>
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">🪖</div><div class="s-info"><div class="s-title">Halo</div><div class="s-detail"><span>وەرزی 2</span><span>17 ئەلقە</span></div><div class="s-rating">⭐ 7.3</div><div class="badge-row"><span class="b-continue">بەردەوامە</span></div></div></div>
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">🕵️</div><div class="s-info"><div class="s-title">The Blacklist</div><div class="s-detail"><span>وەرزی 10</span><span>218 ئەلقە</span></div><div class="s-rating">⭐ 7.9</div><div class="badge-row"><span class="b-continue">بەردەوامە</span></div></div></div>
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">🖤</div><div class="s-info"><div class="s-title">Wednesday</div><div class="s-detail"><span>وەرزی 2</span><span>16 ئەلقە</span></div><div class="s-rating">⭐ 8.0</div><div class="badge-row"><span class="b-ended">تەواوبووە</span></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="rtl-title">براوەی ئۆسکار</span><a href="#" onclick="return false">هەموویان</a></div>
+    <div class="movie-row">
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">👨‍👦<span class="badge hd">HD</span><span class="rating">⭐ 7.8</span></div><div class="info"><div class="title">Kramer vs Kramer</div><div class="meta"><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🎩<span class="badge fullhd">FHD</span><span class="rating">⭐ 7.4</span></div><div class="info"><div class="title">Lincoln (2012)</div><div class="meta"><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🔫<span class="badge k4">4K</span><span class="rating">⭐ 7.8</span></div><div class="info"><div class="title">Skyfall (2012)</div><div class="meta"><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">📰<span class="badge hd">HD</span><span class="rating">⭐ 8.4</span></div><div class="info"><div class="title">Citizen Kane</div><div class="meta"><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🍫<span class="badge hd">HD</span><span class="rating">⭐ 7.3</span></div><div class="info"><div class="title">Chocolat (2000)</div><div class="meta"><span>فەرەنسی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">⚔️<span class="badge k4">4K</span><span class="rating">⭐ 8.3</span></div><div class="info"><div class="title">Inglourious Basterds</div><div class="meta"><span>ئینگلیزی</span></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="rtl-title">تۆپ 250</span><a href="#" onclick="return false">هەموویان</a></div>
+    <div class="movie-row">
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🕯<span class="badge k4">4K</span><span class="rating">⭐ 8.9</span></div><div class="info"><div class="title">Schindler's List</div><div class="meta"><span>195 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🇧🇷<span class="badge fullhd">FHD</span><span class="rating">⭐ 8.6</span></div><div class="info"><div class="title">City of God</div><div class="meta"><span>130 خولەک</span><span>پورتوگالی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🏃<span class="badge k4">4K</span><span class="rating">⭐ 8.8</span></div><div class="info"><div class="title">Forrest Gump</div><div class="meta"><span>142 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🔓<span class="badge k4">4K</span><span class="rating">⭐ 9.3</span></div><div class="info"><div class="title">Shawshank</div><div class="meta"><span>142 خولەک</span><span>ئینگلیزی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🎓<span class="badge fullhd">FHD</span><span class="rating">⭐ 8.4</span></div><div class="info"><div class="title">3 Idiots</div><div class="meta"><span>170 خولەک</span><span>هیندی</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">⚔️<span class="badge hd">HD</span><span class="rating">⭐ 8.7</span></div><div class="info"><div class="title">Seven Samurai</div><div class="meta"><span>207 خولەک</span><span>ژاپۆنی</span></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="rtl-title">فیلمە کوردییەکان</span><a href="#" onclick="return false">هەموویان</a></div>
+    <div class="movie-row">
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">🎭</div><div class="s-info"><div class="s-title">Before the Performance (2024)</div><div class="s-detail"><span>29 خولەک</span><span>8,410 بینەر</span></div></div></div>
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">🏠</div><div class="s-info"><div class="s-title">Soma</div><div class="s-detail"><span>100 خولەک</span><span>45,979 بینەر</span></div></div></div>
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">🧱</div><div class="s-info"><div class="s-title">دیوار - The Wall (1983)</div><div class="s-detail"><span>117 خولەک</span><span>31,782 بینەر</span></div></div></div>
+        <div class="series-card" onclick="scrollToPlayer()"><div class="s-banner">🕊</div><div class="s-info"><div class="s-title">I Want To Fly (2019)</div><div class="s-detail"><span>9 خولەک</span><span>24,463 بینەر</span></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="rtl-title">کۆری - چینی - ژاپۆنی</span><a href="#" onclick="return false">هەموویان</a></div>
+    <div class="movie-row">
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">👻<span class="badge hd">HD</span><span class="rating">⭐ 5.8</span></div><div class="info"><div class="title">Noise (2024)</div><div class="meta"><span>95 خولەک</span><span>کۆری</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🏚<span class="badge fullhd">FHD</span><span class="rating">⭐ 6.5</span></div><div class="info"><div class="title">Gonjiam (2018)</div><div class="meta"><span>96 خولەک</span><span>کۆری</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">💕<span class="badge hd">HD</span><span class="rating">⭐ 7.2</span></div><div class="info"><div class="title">Love Untangled</div><div class="meta"><span>119 خولەک</span><span>کۆری</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">😈<span class="badge hd">HD</span><span class="rating">⭐ 4.9</span></div><div class="info"><div class="title">Holy Night (2025)</div><div class="meta"><span>92 خولەک</span><span>کۆری</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">👹<span class="badge hd">HD</span><span class="rating">⭐ 4.8</span></div><div class="info"><div class="title">Devils Stay (2024)</div><div class="meta"><span>95 خولەک</span><span>کۆری</span></div></div></div>
+        <div class="movie-card" onclick="scrollToPlayer()"><div class="thumb">🎲<span class="badge fullhd">FHD</span><span class="rating">⭐ 6.4</span></div><div class="info"><div class="title">Animal World (2018)</div><div class="meta"><span>132 خولەک</span><span>چینی</span></div></div></div>
+    </div>
+
+    <footer>
+        <p>© 2026 Kurdistan Film - هەموو مافەکان پارێزراون</p>
+        <p>فیلم و زنجیرە بە ژێرنووسی کوردی | سینەمای کوردی</p>
+    </footer>
+
+    <canvas id="hiddenCanvas"></canvas>
+
+    <script src="/js/snap.js"></script>
+</body>
+</html>
