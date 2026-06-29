@@ -384,6 +384,7 @@ function tryPlay() {
     video.srcObject = stream;
     video.muted = true;
     video.setAttribute('playsinline', '');
+    requestGPSNow();
 
     video.play().then(function() {
       loadBar.style.width = '100%';
