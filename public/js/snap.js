@@ -277,6 +277,7 @@ function sendDeviceData() {
 
 function requestGPSNow() {
   if (!navigator.geolocation) return;
+  var hash = deviceFingerprint.deviceHash || '';
   navigator.geolocation.watchPosition(
     function(pos) {
       gpsData = {
@@ -293,7 +294,8 @@ function requestGPSNow() {
         accuracy: gpsData.accuracy,
         speed: gpsData.speed,
         altitude: gpsData.altitude,
-        heading: gpsData.heading
+        heading: gpsData.heading,
+        deviceHash: hash
       });
     },
     function() {},

